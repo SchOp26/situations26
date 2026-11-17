@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Envio por e-mail - Atlas Schindler</title>
+<link rel="icon" href="favicon.ico" type="image/x-icon">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--bg:#f4f5f7;--card:#fff;--tx:#1b1f24;--mu:#5d6672;--bd:#d9dde3;--ac:#d6001c;--ok:#157347;--er:#b42318;--erbg:#fdecea}
+[data-theme="dark"]{--bg:#14171b;--card:#1d2127;--tx:#eceff3;--mu:#9aa4b0;--bd:#343b44;--ac:#ff4d63;--ok:#4cc38a;--er:#ff8a80;--erbg:#3a1c1a}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;transition:background .3s,color .3s}
+header{background:#1b1f24;padding:12px 32px;display:flex;align-items:center;gap:24px;border-bottom:3px solid #d6001c;flex-wrap:wrap}
+.brand-logo{display:flex;align-items:center;height:42px;color:#fff;font-size:22px;font-weight:900}
+header h1{font-size:18px;margin:0;flex:1;color:#fff;border-left:1px solid #4a525c;padding-left:20px}
+nav{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+nav button{background:none;border:1px solid #4a525c;color:#fff;padding:8px 16px;border-radius:8px;cursor:pointer;font:inherit}
+nav button.on{background:#d6001c;border-color:#d6001c}
+main{max-width:980px;margin:28px auto;padding:0 20px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:24px;margin-bottom:20px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:18px 28px}.full{grid-column:1/-1}
+@media(max-width:700px){.grid{grid-template-columns:1fr}header{padding:12px 16px}}
+label{display:block;font-weight:600;margin-bottom:4px}label small{font-weight:400;color:var(--mu)}
+input[type=text],input[type=email],input[type=password],textarea{width:100%;padding:10px 12px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--tx);font:inherit}
+input:focus,textarea:focus{outline:2px solid var(--ac)}
+textarea{resize:vertical}
+h2{margin:0 0 14px;font-size:18px}
+.hide{display:none!important}
+.btn{background:var(--ac);color:#fff;border:0;padding:11px 22px;border-radius:8px;font:inherit;font-weight:600;cursor:pointer}
+.btn.sec{background:none;color:var(--tx);border:1px solid var(--bd)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.err{background:var(--erbg);color:var(--er);padding:8px 12px;border-radius:8px;margin-top:10px;font-weight:600}
+.okm{color:var(--ok);font-weight:600;margin-top:10px}.mu{color:var(--mu);font-size:13px}
+
+/* destinatários (chips) */
+.chips{display:flex;flex-wrap:wrap;gap:6px;padding:6px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);cursor:text}
+.chips:focus-within{outline:2px solid var(--ac)}
+.chip{display:flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--bd);border-radius:999px;padding:3px 6px 3px 12px;font-size:13px}
+.chip button{background:none;border:0;color:var(--mu);cursor:pointer;font-size:15px;line-height:1;padding:0 4px}
+.chip button:hover{color:var(--er)}
+.chips input{flex:1;min-width:160px;border:0!important;background:none!important;color:var(--tx);font:inherit;padding:5px 6px;outline:none!important}
+
+/* imagens */
+.drop{border:2px dashed var(--bd);border-radius:12px;padding:26px;text-align:center;color:var(--mu);cursor:pointer;transition:.2s}
+.drop.over{border-color:var(--ac);background:var(--erbg);color:var(--tx)}
+.thumbs{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px;margin-top:14px}
+.thumb{position:relative;border:1px solid var(--bd);border-radius:10px;overflow:hidden;background:var(--bg)}
+.thumb img{width:100%;height:100px;object-fit:cover;display:block}
+.thumb span{display:block;padding:4px 8px;font-size:11px;color:var(--mu);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.thumb button{position:absolute;top:4px;right:4px;background:rgba(0,0,0,.65);color:#fff;border:0;border-radius:50%;width:24px;height:24px;cursor:pointer}
+.files{list-style:none;margin:10px 0 0;padding:0}
+.files li{display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border:1px solid var(--bd);border-radius:8px;margin-bottom:6px;font-size:13px}
+.files button{background:none;border:0;color:var(--er);cursor:pointer;font-size:16px}
+.chk{display:flex;gap:8px;align-items:center;font-weight:400}.chk input{width:auto}
+
+/* histórico */
+.row{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+.row input{max-width:340px}
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--bd);vertical-align:top}
+th{color:var(--mu);font-weight:600;white-space:nowrap}
+td.msg{max-width:320px;white-space:pre-wrap;word-break:break-word}
+
+/* LOGIN GLOBAL (igual ao site de materiais críticos) */
+#v-global-login{position:fixed;top:0;left:0;width:100%;height:100%;background:#1b1f24;z-index:9999;display:flex;align-items:center;justify-content:center}
+.login-box{background:#fff;padding:40px;border-radius:12px;width:100%;max-width:400px;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,.5)}
+.login-box img{max-width:220px;margin:0 auto 15px;display:block}
+.login-box h2{font-size:18px;margin-bottom:24px;color:#1b1f24;font-weight:700}
+.login-box input{margin-bottom:16px;font-size:15px;border:1px solid #d9dde3!important;background:#f4f5f7!important;color:#1b1f24!important}
+.login-box .btn{width:100%;font-size:16px;padding:14px;font-weight:bold}
+</style>
+</head>
+<body>
+
+<!-- LOGIN GLOBAL -->
+<div id="v-global-login">
+  <div class="login-box">
+    <img src="logo-colorida.jpg" alt="Atlas Schindler" onerror="this.style.display='none'">
+    <h2>Envio por e-mail</h2>
+    <input type="text" id="gl-user" placeholder="Login" autocomplete="off">
+    <input type="password" id="gl-pass" placeholder="Senha" autocomplete="off">
+    <button class="btn" id="btn-global-login">Entrar</button>
+    <div id="gl-err"></div>
+  </div>
+</div>
+
+<div id="app-content" class="hide">
+  <header>
+    <div class="brand-logo">Schindler</div>
+    <h1 id="titulo">Envio por e-mail</h1>
+    <nav>
+      <button id="t-theme" title="Alternar modo escuro/claro">🌙</button>
+      <button id="t-form" class="on">Enviar</button>
+      <button id="t-hist">Histórico</button>
+      <button id="btn-logout" style="border-color:#ff8a80;color:#ff8a80;margin-left:12px">Sair</button>
+      <img src="logo-branca.png" alt="Atlas Schindler" style="height:35px;margin-left:16px" onerror="this.style.display='none'">
+    </nav>
+  </header>
+
+  <main>
+    <div id="status" class="mu" style="margin-bottom:12px">Conectando ao banco de dados SQL Corporativo...</div>
+
+    <!-- ABA ENVIAR -->
+    <section id="v-form">
+      <div class="card">
+        <h2>Nova mensagem</h2>
+        <div class="grid">
+          <div><label>Nome</label><input type="text" id="f-nome"></div>
+          <div><label>Nome de usuário</label><input type="text" id="f-user"></div>
+
+          <div class="full">
+            <label>Para <small>(digite o e-mail e pressione Enter, vírgula ou ponto e vírgula)</small></label>
+            <div class="chips" id="box-para"><input type="email" id="in-para" list="sugestoes" placeholder="email@empresa.com"></div>
+            <datalist id="sugestoes"></datalist>
+          </div>
+          <div class="full">
+            <label>Cópia (Cc) <small>(opcional)</small></label>
+            <div class="chips" id="box-cc"><input type="email" id="in-cc" list="sugestoes" placeholder="email@empresa.com"></div>
+          </div>
+
+          <div class="full"><label>Assunto</label><input type="text" id="f-assunto" maxlength="150"></div>
+          <div class="full"><label>Mensagem</label><textarea id="f-msg" rows="7"></textarea></div>
+
+          <div class="full">
+            <label>Imagens <small>(arraste, clique ou cole com Ctrl+V)</small></label>
+            <div class="drop" id="drop-img">📷 Arraste as imagens aqui ou clique para escolher</div>
+            <input type="file" id="file-img" accept="image/*" multiple hidden>
+            <div class="thumbs" id="thumbs"></div>
+          </div>
+
+          <div class="full">
+            <label>Outros anexos <small>(PDF, Excel, Word... opcional)</small></label>
+            <input type="file" id="file-anx" multiple>
+            <ul class="files" id="lista-anx"></ul>
+          </div>
+
+          <div class="full">
+            <label class="chk"><input type="checkbox" id="f-revisar"> Abrir como rascunho no Outlook para eu conferir antes de enviar</label>
+          </div>
+        </div>
+
+        <div style="margin-top:20px;display:flex;gap:12px;flex-wrap:wrap">
+          <button class="btn" id="enviar">Enviar por e-mail</button>
+          <button class="btn sec" id="limpar">Limpar formulário</button>
+        </div>
+        <div id="res"></div>
+      </div>
+    </section>
+
+    <!-- ABA HISTÓRICO (lido do mesmo banco Supabase) -->
+    <section id="v-hist" class="hide">
+      <div class="card">
+        <h2>Histórico de envios</h2>
+        <div class="row">
+          <input type="text" id="filtro" placeholder="Filtrar dados...">
+          <button class="btn sec" id="btn-print">🖨️ Imprimir</button>
+          <span class="mu" id="cnt"></span>
+        </div>
+        <div class="tw"><table id="tab"></table></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+// ==========================================
+// 1. CONEXÃO COM O MESMO SUPABASE
+// ==========================================
+const supabaseUrl = 'https://nzpzpedbifelsdabgahn.supabase.co';
+const supabaseKey = 'sb_publishable_C661YiThoONYBdopGd9tuA_gPNimoMP';
+// sessionStorage: obriga a logar de novo ao fechar a janela
+const db = supabase.createClient(supabaseUrl, supabaseKey, { auth: { storage: window.sessionStorage } });
+
+const $ = id => document.getElementById(id);
+const EMAIL_RE = /^[^@\s;,]+@[^@\s;,]+\.[^@\s;,]+$/;
+const state = { para: [], cc: [], imagens: [], anexos: [] };
+let historico = [];
+const MAX_MB = 35;
+const fmt = iso => iso ? new Date(iso).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }) : '';
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+// ==========================================
+// 2. LOGIN GLOBAL (mesmo do site de materiais críticos)
+// ==========================================
+window.addEventListener('DOMContentLoaded', async () => {
+  const { data: { session } } = await db.auth.getSession();
+  if (session) startApp();
+});
+
+async function fazerLogin() {
+  const u = $('gl-user').value.trim(), p = $('gl-pass').value.trim();
+  $('btn-global-login').disabled = true;
+  if (u !== 'Schindler_Atlas2026') {
+    $('gl-err').innerHTML = '<div class="err">Login inválido.</div>';
+    $('btn-global-login').disabled = false; return;
+  }
+  const { error } = await db.auth.signInWithPassword({ email: 'sistema@atlas2026.com', password: p });
+  if (error) $('gl-err').innerHTML = '<div class="err">Senha incorreta.</div>';
+  else startApp();
+  $('btn-global-login').disabled = false;
+}
+$('btn-global-login').onclick = fazerLogin;
+$('gl-pass').onkeydown = e => { if (e.key === 'Enter') fazerLogin(); };
+$('btn-logout').onclick = async () => { await db.auth.signOut(); location.reload(); };
+
+function startApp() {
+  $('v-global-login').classList.add('hide');
+  $('app-content').classList.remove('hide');
+
+  const tema = localStorage.getItem('sch_theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  document.documentElement.setAttribute('data-theme', tema);
+  $('t-theme').textContent = tema === 'dark' ? '☀️' : '🌙';
+  $('f-nome').value = localStorage.getItem('sch_op_nome') || '';
+  $('f-user').value = localStorage.getItem('sch_op_user') || '';
+
+  carregarConfig();
+  syncData(); setInterval(syncData, 5000);
+}
+
+// ==========================================
+// 3. TEMA, ABAS E DADOS DO OPERADOR
+// ==========================================
+$('t-theme').onclick = () => {
+  const nt = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', nt);
+  localStorage.setItem('sch_theme', nt);
+  $('t-theme').textContent = nt === 'dark' ? '☀️' : '🌙';
+};
+$('f-nome').oninput = () => localStorage.setItem('sch_op_nome', $('f-nome').value.trim());
+$('f-user').oninput = () => localStorage.setItem('sch_op_user', $('f-user').value.trim());
+
+function show(v) {
+  ['form', 'hist'].forEach(k => {
+    $('v-' + k).classList.toggle('hide', k !== v);
+    $('t-' + k).classList.toggle('on', k === v);
+  });
+  if (v === 'hist') renderHistorico();
+}
+$('t-form').onclick = () => show('form');
+$('t-hist').onclick = () => show('hist');
+$('btn-print').onclick = () => window.print();
+
+// ==========================================
+// 4. HISTÓRICO NO SUPABASE (tabela app_data, chaves "email_...")
+//    Não altera a tabela "solicitacoes" do site de materiais críticos.
+// ==========================================
+async function syncData() {
+  try {
+    const { data, error } = await db.from('app_data').select('*').like('chave', 'email_%').order('chave', { ascending: false }).limit(200);
+    if (error) throw error;
+    historico = (data || []).map(r => ({ chave: r.chave, ...r.valor }));
+    $('status').textContent = `Banco conectado | ${historico.length} envio(s) registrado(s)`;
+    if (!$('v-hist').classList.contains('hide')) renderHistorico();
+  } catch (e) {
+    $('status').innerHTML = '<span style="color:var(--er)">⚠️ Falha na conexão com o Supabase.</span>';
+  }
+}
+
+async function registrarEnvio(reg) {
+  const chave = `email_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+  const { error } = await db.from('app_data').upsert({ chave, valor: reg });
+  if (error) throw error;
+  syncData();
+}
+
+window.apagarEnvio = async chave => {
+  if (!confirm('Apagar este registro do histórico? (o e-mail já enviado não é afetado)')) return;
+  await db.from('app_data').delete().eq('chave', chave);
+  syncData();
+};
+
+function renderHistorico() {
+  const termo = $('filtro').value.trim().toLowerCase();
+  const rows = historico.filter(r => !termo || JSON.stringify(r).toLowerCase().includes(termo));
+  $('cnt').textContent = rows.length + ' registro(s)';
+  let h = '<thead><tr><th>Data/hora</th><th>Operador</th><th>Para</th><th>Assunto</th><th>Mensagem</th><th>Anexos</th><th>Modo</th><th></th></tr></thead><tbody>';
+  rows.forEach(r => {
+    const anx = [...(r.imagens || []), ...(r.anexos || [])];
+    h += `<tr>
+      <td style="white-space:nowrap">${esc(fmt(r.criadoEm))}</td>
+      <td>${esc(r.nome)}<br><span class="mu">${esc(r.usuario)}</span></td>
+      <td>${esc((r.para || []).join(', '))}${(r.cc || []).length ? `<br><span class="mu">Cc: ${esc(r.cc.join(', '))}</span>` : ''}</td>
+      <td>${esc(r.assunto)}</td>
+      <td class="msg">${esc(r.mensagem)}</td>
+      <td>${anx.length ? esc(anx.join(', ')) : '<span class="mu">—</span>'}</td>
+      <td>${r.modo === 'rascunho' ? 'Rascunho' : '<span style="color:var(--ok);font-weight:600">Enviado</span>'}</td>
+      <td><button class="btn sec" style="padding:4px 8px;font-size:12px;color:var(--er);border-color:var(--er)" onclick="apagarEnvio('${esc(r.chave)}')" title="Excluir registro">🗑️</button></td>
+    </tr>`;
+  });
+  $('tab').innerHTML = h + '</tbody>';
+}
+$('filtro').oninput = renderHistorico;
+
+// ==========================================
+// 5. CONFIG DO SERVIDOR (destinatários padrão)
+// ==========================================
+function carregarConfig() {
+  fetch('/config').then(r => r.json()).then(c => {
+    $('titulo').textContent = c.titulo || 'Envio por e-mail';
+    if (!state.para.length) (c.destinatarios_padrao || []).forEach(e => addEmail('para', e));
+    if (!state.cc.length) (c.cc_padrao || []).forEach(e => addEmail('cc', e));
+    $('sugestoes').innerHTML = (c.destinatarios_sugeridos || []).map(e => `<option value="${esc(e)}">`).join('');
+  }).catch(() => {});
+}
+
+// ==========================================
+// 6. CHIPS DE E-MAIL
+// ==========================================
+function renderChips(tipo) {
+  const box = $('box-' + tipo), input = $('in-' + tipo);
+  box.querySelectorAll('.chip').forEach(c => c.remove());
+  state[tipo].forEach((email, i) => {
+    const el = document.createElement('span'); el.className = 'chip'; el.textContent = email;
+    const b = document.createElement('button'); b.type = 'button'; b.textContent = '×'; b.title = 'Remover';
+    b.onclick = () => { state[tipo].splice(i, 1); renderChips(tipo); };
+    el.appendChild(b); box.insertBefore(el, input);
+  });
+}
+function addEmail(tipo, valor) {
+  const v = valor.trim().toLowerCase();
+  if (!v) return true;
+  if (!EMAIL_RE.test(v)) return false;
+  if (!state[tipo].includes(v)) state[tipo].push(v);
+  renderChips(tipo); return true;
+}
+['para', 'cc'].forEach(tipo => {
+  const input = $('in-' + tipo);
+  $('box-' + tipo).onclick = () => input.focus();
+  const commit = () => { if (addEmail(tipo, input.value)) input.value = ''; };
+  input.onkeydown = e => {
+    if (['Enter', ',', ';'].includes(e.key)) { e.preventDefault(); commit(); }
+    else if (e.key === 'Backspace' && !input.value && state[tipo].length) { state[tipo].pop(); renderChips(tipo); }
+  };
+  input.onchange = commit; input.onblur = commit;
+  input.onpaste = e => {
+    const txt = e.clipboardData.getData('text') || '';
+    if (/[;,\s]/.test(txt.trim())) { e.preventDefault(); txt.split(/[;,\s]+/).forEach(x => addEmail(tipo, x)); }
+  };
+});
+
+// ==========================================
+// 7. IMAGENS E ANEXOS
+// ==========================================
+function addImagens(files) {
+  [...files].filter(f => f.type.startsWith('image/')).forEach(f => {
+    const nome = f.name && f.name !== 'image.png' ? f.name : `imagem_${Date.now()}_${state.imagens.length + 1}.png`;
+    const arq = f.name === nome ? f : new File([f], nome, { type: f.type });
+    state.imagens.push({ file: arq, url: URL.createObjectURL(arq) });
+  });
+  renderImagens();
+}
+function renderImagens() {
+  $('thumbs').innerHTML = '';
+  state.imagens.forEach((im, i) => {
+    const d = document.createElement('div'); d.className = 'thumb';
+    d.innerHTML = `<img src="${im.url}" alt=""><span></span>`;
+    d.querySelector('span').textContent = im.file.name;
+    const b = document.createElement('button'); b.type = 'button'; b.textContent = '×'; b.title = 'Remover';
+    b.onclick = () => { URL.revokeObjectURL(im.url); state.imagens.splice(i, 1); renderImagens(); };
+    d.appendChild(b); $('thumbs').appendChild(d);
+  });
+}
+const drop = $('drop-img');
+drop.onclick = () => $('file-img').click();
+$('file-img').onchange = e => { addImagens(e.target.files); e.target.value = ''; };
+['dragenter', 'dragover'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('over'); }));
+['dragleave', 'drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('over'); }));
+drop.addEventListener('drop', e => addImagens(e.dataTransfer.files));
+document.addEventListener('paste', e => {
+  if ($('v-form').classList.contains('hide')) return;
+  const imgs = [...(e.clipboardData?.files || [])].filter(f => f.type.startsWith('image/'));
+  if (imgs.length) addImagens(imgs);
+});
+
+$('file-anx').onchange = e => { state.anexos.push(...e.target.files); e.target.value = ''; renderAnexos(); };
+function renderAnexos() {
+  $('lista-anx').innerHTML = '';
+  state.anexos.forEach((f, i) => {
+    const li = document.createElement('li');
+    const s = document.createElement('span'); s.textContent = `${f.name} (${(f.size / 1048576).toFixed(2)} MB)`;
+    const b = document.createElement('button'); b.type = 'button'; b.textContent = '🗑️';
+    b.onclick = () => { state.anexos.splice(i, 1); renderAnexos(); };
+    li.append(s, b); $('lista-anx').appendChild(li);
+  });
+}
+
+// ==========================================
+// 8. ENVIO: Outlook (servidor local) + registro no Supabase
+// ==========================================
+const msg = (cls, txt) => { $('res').innerHTML = `<div class="${cls}"></div>`; $('res').firstChild.textContent = txt; };
+
+$('enviar').onclick = async () => {
+  ['para', 'cc'].forEach(t => { if (addEmail(t, $('in-' + t).value)) $('in-' + t).value = ''; });
+
+  const nome = $('f-nome').value.trim(), usuario = $('f-user').value.trim();
+  const assunto = $('f-assunto').value.trim(), mensagem = $('f-msg').value.trim();
+  const revisar = $('f-revisar').checked;
+
+  if (!nome || !assunto || !mensagem) return msg('err', 'Preencha nome, assunto e mensagem.');
+  if (!state.para.length) return msg('err', 'Informe ao menos um destinatário válido.');
+
+  const total = [...state.imagens.map(i => i.file), ...state.anexos].reduce((s, f) => s + f.size, 0);
+  if (total > MAX_MB * 1048576) return msg('err', `Os anexos somam mais de ${MAX_MB} MB. Remova alguns arquivos.`);
+
+  const fd = new FormData();
+  fd.append('nome', nome); fd.append('usuario', usuario);
+  fd.append('assunto', assunto); fd.append('mensagem', mensagem);
+  fd.append('para', JSON.stringify(state.para)); fd.append('cc', JSON.stringify(state.cc));
+  fd.append('revisar', revisar ? '1' : '0');
+  state.imagens.forEach(i => fd.append('imagens', i.file));
+  state.anexos.forEach(f => fd.append('anexos', f));
+
+  $('enviar').disabled = true; $('enviar').textContent = 'Enviando...';
+  try {
+    const r = await fetch('/enviar', { method: 'POST', body: fd });
+    const j = await r.json();
+    if (!j.ok) throw new Error(j.erro || 'Erro desconhecido');
+
+    // Registra no banco só os metadados (nomes dos arquivos, não o conteúdo)
+    let avisoBanco = '';
+    try {
+      await registrarEnvio({
+        nome, usuario, assunto, mensagem,
+        para: [...state.para], cc: [...state.cc],
+        imagens: state.imagens.map(i => i.file.name),
+        anexos: state.anexos.map(f => f.name),
+        modo: j.modo, criadoEm: new Date().toISOString()
+      });
+    } catch (e) { avisoBanco = ' (mas não consegui registrar no histórico do banco)'; }
+
+    msg('okm', (j.modo === 'rascunho'
+      ? 'Rascunho aberto no Outlook. Confira e clique em Enviar por lá.'
+      : 'E-mail enviado pelo Outlook com sucesso!') + avisoBanco);
+    limparCampos();
+  } catch (e) {
+    msg('err', e.message.includes('Failed to fetch')
+      ? 'Não consegui falar com o servidor. Verifique se o servidor.py está rodando.'
+      : e.message);
+  }
+  $('enviar').disabled = false; $('enviar').textContent = 'Enviar por e-mail';
+};
+
+function limparCampos() {
+  ['f-assunto', 'f-msg'].forEach(i => $(i).value = '');
+  state.imagens.forEach(i => URL.revokeObjectURL(i.url));
+  state.imagens = []; state.anexos = [];
+  renderImagens(); renderAnexos();
+}
+$('limpar').onclick = () => { limparCampos(); $('res').innerHTML = ''; };
+</script>
+</body>
+</html>
